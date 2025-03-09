@@ -2,7 +2,6 @@ const fs = require('fs');
 const https = require('https');
 const http = require('http');
 
-// List your sites here (update with your sites)
 const sites = [
   {
     name: "SoumyaK4",
@@ -23,27 +22,30 @@ const sites = [
   {
     name: "Timeline",
     url: "https://soumyak4.in/Timeline/"
-  },
-  // Add more sites as needed
+  }
 ];
 
-// Function to get the current date/time in IST
 function getISTTime() {
   return new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
 }
 
-// Function to check a site and measure response time
 function checkSite(site) {
   return new Promise((resolve) => {
     const start = Date.now();
     const lib = site.url.startsWith('https') ? https : http;
     const request = lib.get(site.url, (res) => {
       const responseTime = Date.now() - start;
+      let status;
+      if (res.statusCode === 200) {
+        status = responseTime < 150 ? "up" : "slow";
+      } else {
+        status = "down";
+      }
       resolve({
-        status: res.statusCode === 200 ? "up" : "down",
+        status,
         responseTime: responseTime + "ms"
       });
-      res.resume(); // consume the response data to free memory
+      res.resume();
     });
     request.on('error', () => {
       const responseTime = Date.now() - start;
@@ -52,7 +54,7 @@ function checkSite(site) {
         responseTime: responseTime + "ms"
       });
     });
-    request.setTimeout(10000, () => { // 10-second timeout
+    request.setTimeout(10000, () => {
       request.abort();
       const responseTime = Date.now() - start;
       resolve({
@@ -63,7 +65,6 @@ function checkSite(site) {
   });
 }
 
-// Read existing uptime data (if available)
 const dataFile = 'data.json';
 let data = [];
 if (fs.existsSync(dataFile)) {
@@ -75,19 +76,16 @@ if (fs.existsSync(dataFile)) {
   }
 }
 
-// Convert data array to a map for easier update keyed by URL
 let dataMap = {};
 data.forEach(site => {
   dataMap[site.url] = site;
 });
 
-// Process each site sequentially
 async function processSites() {
   for (const site of sites) {
     const result = await checkSite(site);
     const currentTime = getISTTime();
     if (dataMap[site.url]) {
-      // If the site is down now, update the lastDown field
       if (result.status === "down") {
         dataMap[site.url].lastDown = currentTime;
       }
@@ -95,7 +93,6 @@ async function processSites() {
       dataMap[site.url].responseTime = result.responseTime;
       dataMap[site.url].lastChecked = currentTime;
     } else {
-      // Create a new record
       dataMap[site.url] = {
         name: site.name,
         url: site.url,
@@ -108,7 +105,6 @@ async function processSites() {
   }
 }
 
-// Update data.json with the new uptime data
 async function updateDataFile() {
   await processSites();
   const updatedData = Object.values(dataMap);

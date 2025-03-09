@@ -16,9 +16,21 @@ document.addEventListener("DOMContentLoaded", function() {
         siteNameTd.appendChild(link);
         tr.appendChild(siteNameTd);
 
-        // Status (up/down)
+        // Status with emoji and color
         const statusTd = document.createElement("td");
-        statusTd.textContent = site.status;
+        let statusText, statusClass;
+        if (site.status === "up") {
+          statusText = "👍 Up";
+          statusClass = "status-up";
+        } else if (site.status === "slow") {
+          statusText = "⚠️ Slow";
+          statusClass = "status-slow";
+        } else if (site.status === "down") {
+          statusText = "👎 Down";
+          statusClass = "status-down";
+        }
+        statusTd.textContent = statusText;
+        statusTd.classList.add(statusClass);
         tr.appendChild(statusTd);
 
         // Response time
